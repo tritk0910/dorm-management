@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlserver"
+}
+
+model Building {
+  buildingId   Int    @id @default(autoincrement()) @map("BuildingID")
+  buildingName String @map("BuildingName") @db.NVarChar(100)
+  address      String @map("Address") @db.NVarChar(255)
+
+  rooms Room[]
+
+  @@map("Building")
+}
+
+model Room {
+  roomId     Int    @id @default(autoincrement()) @map("RoomID")
+  buildingId Int    @map("BuildingID")
+  roomNumber String @map("RoomNumber") @db.NVarChar(20)
+  capacity   Int    @map("Capacity")
+  roomType   String @map("RoomType") @db.NVarChar(50)
+
+  building            Building             @relation(fields: [buildingId], references: [buildingId])
+  assignments         RoomAssignment[]
+  maintenanceRequests MaintenanceRequest[]
+
+  @@map("Room")
+}
+
+model Student {
+  studentId Int      @id @default(autoincrement()) @map("StudentID")
+  firstName String   @map("FirstName") @db.NVarChar(50)
+  lastName  String   @map("LastName") @db.NVarChar(50)
+  dob       DateTime @map("DOB") @db.Date
+  gender    String   @map("Gender") @db.NVarChar(10)
+  phone     String   @map("Phone") @db.NVarChar(20)
+  email     String   @map("Email") @db.NVarChar(100)
+  major     String   @map("Major") @db.NVarChar(100)
+  year      Int      @map("Year")
+
+  assignments         RoomAssignment[]
+  maintenanceRequests MaintenanceRequest[]
+
+  @@map("Student")
+}
+
+model Contract {
+  contractId    Int      @id @default(autoincrement()) @map("ContractID")
+  startDate     DateTime @map("StartDate") @db.Date
+  endDate       DateTime @map("EndDate") @db.Date
+  depositAmount Decimal  @map("DepositAmount") @db.Decimal(10, 2)
+  status        String   @map("Status") @db.NVarChar(20)
+
+  assignments RoomAssignment[]
+  payments    Payment[]
+
+  @@map("Contract")
+}
+
+model RoomAssignment {
+  assignmentId Int       @id @default(autoincrement()) @map("AssignmentID")
+  studentId    Int       @map("StudentID")
+  roomId       Int       @map("RoomID")
+  contractId   Int       @map("ContractID")
+  moveInDate   DateTime  @map("MoveInDate") @db.Date
+  moveOutDate  DateTime? @map("MoveOutDate") @db.Date
+
+  student  Student  @relation(fields: [studentId], references: [studentId])
+  room     Room     @relation(fields: [roomId], references: [roomId])
+  contract Contract @relation(fields: [contractId], references: [contractId])
+
+  @@map("RoomAssignment")
+}
+
+model Payment {
+  paymentId   Int      @id @default(autoincrement()) @map("PaymentID")
+  contractId  Int      @map("ContractID")
+  amount      Decimal  @map("Amount") @db.Decimal(10, 2)
+  paymentDate DateTime @map("PaymentDate") @db.Date
+  paymentType String   @map("PaymentType") @db.NVarChar(50)
+  status      String   @map("Status") @db.NVarChar(20)
+  dueDate     DateTime @map("DueDate") @db.Date
+
+  contract Contract @relation(fields: [contractId], references: [contractId])
+
+  @@map("Payment")
+}
+
+model Staff {
+  staffId Int    @id @default(autoincrement()) @map("StaffID")
+  name    String @map("Name") @db.NVarChar(100)
+  role    String @map("Role") @db.NVarChar(50)
+  phone   String @map("Phone") @db.NVarChar(20)
+  email   String @map("Email") @db.NVarChar(100)
+
+  maintenanceRequests MaintenanceRequest[]
+
+  @@map("Staff")
+}
+
+model MaintenanceRequest {
+  requestId   Int      @id @default(autoincrement()) @map("RequestID")
+  roomId      Int      @map("RoomID")
+  studentId   Int      @map("StudentID")
+  description String   @map("Description") @db.NVarChar(1000)
+  requestDate DateTime @map("RequestDate") @db.Date
+  status      String   @map("Status") @db.NVarChar(20)
+  staffId     Int      @map("StaffID")
+
+  room    Room    @relation(fields: [roomId], references: [roomId])
+  student Student @relation(fields: [studentId], references: [studentId])
+  staff   Staff   @relation(fields: [staffId], references: [staffId])
+
+  @@map("MaintenanceRequest")
+}
