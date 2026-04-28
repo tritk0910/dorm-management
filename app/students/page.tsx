@@ -1,8 +1,14 @@
 import Link from "next/link";
-import prisma from "../../lib/db";
+import {
+  IconArrowLeft,
+  IconClipboardList,
+  IconEdit,
+  IconPlus,
+  IconTrash,
+  IconUsers,
+} from "@tabler/icons-react";
 
-// Reads from the DB at request time — opt out of static prerendering.
-export const dynamic = "force-dynamic";
+import prisma from "../../lib/db";
 import { deleteStudent } from "../lib/actions/student";
 import type { Student } from "@/app/generated/prisma/client";
 import { Button } from "@/components/ui/button";
@@ -23,12 +29,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+export const dynamic = "force-dynamic";
+
 const YEAR_LABEL: Record<number, string> = {
   1: "Freshman",
   2: "Sophomore",
   3: "Junior",
   4: "Senior",
-  5: "Fifth Year",
+  5: "5th Year",
   6: "Graduate",
 };
 
@@ -38,290 +46,221 @@ export default async function Page() {
   });
 
   const total = students.length;
-  const byYear = students.reduce<Record<number, number>>((acc, s) => {
-    acc[s.year] = (acc[s.year] ?? 0) + 1;
-    return acc;
-  }, {});
   const majors = new Set(students.map((s) => s.major)).size;
+  const upperclass = students.filter((s) => s.year >= 3).length;
 
   return (
-    <main>
-      {/* —— page masthead —— */}
-      <header className="border-b border-foreground/15">
-        <div className="mx-auto flex max-w-[1300px] items-center justify-between px-6 py-3 sm:px-10">
-          <Link
-            href="/"
-            className="num text-[11px] uppercase tracking-[0.22em] text-muted-foreground hover:text-clay"
-          >
-            ← Hearthstead
-          </Link>
-          <span className="num text-[10px] uppercase tracking-[0.32em] text-clay">
-            ✻ Section A — Residents ✻
-          </span>
-          <span className="num hidden text-[11px] uppercase tracking-[0.22em] text-muted-foreground sm:inline">
-            Vol. I · No. I
-          </span>
-        </div>
-        <div className="rule text-foreground/40" />
-      </header>
+    <>
+      <Nav />
 
-      <section className="mx-auto max-w-[1300px] px-6 pt-12 pb-20 sm:px-10">
-        {/* —— Page heading —— */}
-        <div className="grid grid-cols-12 items-end gap-8">
-          <div className="col-span-12 lg:col-span-8">
-            <span className="num text-[10px] uppercase tracking-[0.4em] text-clay">
-              ¶ The Registry of
-            </span>
-            <h1 className="mt-3 font-display text-[clamp(2.75rem,7vw,5.5rem)] leading-[0.92] tracking-[-0.03em]">
-              Resi<span className="font-display-italic">dents</span>
+      <main className="mx-auto w-full max-w-5xl px-6 py-12 sm:px-8">
+        {/* Header */}
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <IconArrowLeft className="size-3.5" />
+              Home
+            </Link>
+            <h1 className="mt-2 text-3xl tracking-tight sm:text-4xl">
+              Residents
             </h1>
-            <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-foreground/80">
-              Names, terms, and a few good details about everyone who calls
-              Hearthstead home this semester. Add a new entry, amend an
-              existing one, or quietly retire a record from the books.
+            <p className="mt-1 text-sm text-muted-foreground">
+              Everyone who calls Hearthstead home this term.
             </p>
           </div>
-
-          <div className="col-span-12 flex justify-end lg:col-span-4">
-            <Button
-              asChild
-              size="lg"
-              className="num bg-foreground text-background tracking-[0.14em] uppercase hover:bg-clay hover:text-paper"
-            >
-              <Link href="/students/new">
-                <span aria-hidden className="mr-1">
-                  ✚
-                </span>
-                Enroll a Resident
-              </Link>
-            </Button>
-          </div>
+          <Button asChild size="lg">
+            <Link href="/students/new">
+              <IconPlus />
+              Add student
+            </Link>
+          </Button>
         </div>
 
-        <div className="rule-thick mt-10 text-foreground/40" />
-
-        {/* —— Stats strip —— */}
-        <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <StatCard label="Residents on file" value={total.toString().padStart(3, "0")} caption="total entries" />
-          <StatCard
-            label="Distinct majors"
-            value={majors.toString().padStart(2, "0")}
-            caption="fields of study"
-          />
-          <StatCard
-            label="Underclassmen"
-            value={((byYear[1] ?? 0) + (byYear[2] ?? 0))
-              .toString()
-              .padStart(2, "0")}
-            caption="yr. 1 + 2"
-          />
-          <StatCard
-            label="Upper / Grad"
-            value={(
-              (byYear[3] ?? 0) +
-              (byYear[4] ?? 0) +
-              (byYear[5] ?? 0) +
-              (byYear[6] ?? 0)
-            )
-              .toString()
-              .padStart(2, "0")}
-            caption="yr. 3 +"
+        {/* Stats */}
+        <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Stat label="On file" value={total} caption="total residents" />
+          <Stat label="Majors" value={majors} caption="distinct fields" />
+          <Stat
+            label="Upperclass"
+            value={upperclass}
+            caption="year 3 and above"
           />
         </div>
 
-        {/* —— Table —— */}
-        <Card className="mt-10 rounded-md ring-foreground/15">
-          <CardHeader className="border-b border-foreground/10">
-            <CardTitle className="font-display text-2xl tracking-[-0.01em]">
-              The full ledger
-            </CardTitle>
-            <CardDescription className="num text-[11px] uppercase tracking-[0.22em]">
+        {/* Table or empty */}
+        <Card className="mt-6 ring-foreground/8">
+          <CardHeader className="border-b border-border/70 pb-4">
+            <CardTitle className="text-base">The roster</CardTitle>
+            <CardDescription>
               {total === 0
-                ? "No entries yet — the book is clean."
-                : `${total} entr${total === 1 ? "y" : "ies"}, sorted by surname`}
+                ? "Nothing to see yet — add the first one."
+                : `${total} ${total === 1 ? "entry" : "entries"}, sorted by surname.`}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            {total === 0 ? (
-              <EmptyState />
-            ) : (
-              <Table className="text-[14px]">
-                <TableHeader>
-                  <TableRow className="border-foreground/10 bg-secondary/40 hover:bg-secondary/40">
-                    <TableHead className="num w-[72px] text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                      №
-                    </TableHead>
-                    <TableHead className="num text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                      Resident
-                    </TableHead>
-                    <TableHead className="num text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                      Contact
-                    </TableHead>
-                    <TableHead className="num text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                      Major
-                    </TableHead>
-                    <TableHead className="num text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                      Standing
-                    </TableHead>
-                    <TableHead className="num text-right text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                      Actions
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {students.map((s: Student, i: number) => (
-                    <TableRow
-                      key={s.studentId}
-                      className="border-foreground/5"
-                    >
-                      <TableCell className="num text-muted-foreground">
-                        {String(i + 1).padStart(3, "0")}
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-display text-lg leading-tight tracking-tight">
-                          {s.lastName},{" "}
-                          <span className="font-display-italic text-foreground/85">
-                            {s.firstName}
-                          </span>
-                        </div>
-                        <div className="num mt-0.5 text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                          ID · {String(s.studentId).padStart(5, "0")} ·{" "}
-                          {s.gender}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <a
-                          href={`mailto:${s.email}`}
-                          className="num block text-[12px] text-foreground hover:text-clay"
-                        >
-                          {s.email}
-                        </a>
-                        <span className="num block text-[12px] text-muted-foreground">
-                          {s.phone}
-                        </span>
-                      </TableCell>
-                      <TableCell className="max-w-[220px]">
-                        <span className="text-foreground/90">{s.major}</span>
-                      </TableCell>
-                      <TableCell>
-                        <YearBadge year={s.year} />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1.5">
-                          <Button
-                            asChild
-                            size="sm"
-                            variant="outline"
-                            className="num tracking-[0.12em] uppercase"
-                          >
-                            <Link href={`/students/${s.studentId}/edit`}>
-                              Amend
-                            </Link>
-                          </Button>
-                          <form
-                            action={async () => {
-                              "use server";
-                              await deleteStudent(s.studentId);
-                            }}
-                          >
-                            <Button
-                              type="submit"
-                              size="sm"
-                              variant="destructive"
-                              className="num tracking-[0.12em] uppercase"
-                            >
-                              Retire
-                            </Button>
-                          </form>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+            {total === 0 ? <EmptyState /> : <RosterTable students={students} />}
           </CardContent>
         </Card>
+      </main>
 
-        <p className="num mt-4 text-right text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-          ⌃ End of Section A — Residents
-        </p>
-      </section>
-    </main>
+      <Footer />
+    </>
   );
 }
 
 /* ——————————————————————————————————————————————————————————— */
 
-function StatCard({
+function Nav() {
+  return (
+    <header className="sticky top-0 z-10 border-b border-border/70 bg-background/80 backdrop-blur">
+      <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-3 sm:px-8">
+        <Link href="/" className="flex items-center gap-2">
+          <span className="grid size-7 place-items-center rounded-md bg-foreground text-background">
+            <IconClipboardList className="size-4" />
+          </span>
+          <span className="text-base tracking-tight">
+            Hearth<span className="font-serif italic text-warm">stead</span>
+          </span>
+        </Link>
+        <nav className="flex items-center gap-1">
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/students">Residents</Link>
+          </Button>
+          <Button asChild size="sm">
+            <Link href="/students/new">Add student</Link>
+          </Button>
+        </nav>
+      </div>
+    </header>
+  );
+}
+
+function Stat({
   label,
   value,
   caption,
 }: {
   label: string;
-  value: string;
+  value: number;
   caption: string;
 }) {
   return (
-    <Card className="rounded-md ring-foreground/15" size="sm">
-      <CardContent className="flex flex-col gap-2">
-        <span className="num text-[10px] uppercase tracking-[0.32em] text-muted-foreground">
-          {label}
+    <Card size="sm" className="ring-foreground/8">
+      <CardContent className="flex flex-col gap-1">
+        <span className="text-xs text-muted-foreground">{label}</span>
+        <span className="num text-2xl tracking-tight">
+          {value.toString().padStart(2, "0")}
         </span>
-        <span className="num text-3xl tracking-tight text-foreground">
-          {value}
-        </span>
-        <span className="num text-[10px] uppercase tracking-[0.22em] text-clay">
-          {caption}
-        </span>
+        <span className="text-xs text-muted-foreground">{caption}</span>
       </CardContent>
     </Card>
   );
 }
 
-function YearBadge({ year }: { year: number }) {
-  // tiered intent: lower years muted, upper years more emphatic
-  const variant: "secondary" | "outline" | "default" =
-    year <= 2 ? "secondary" : year <= 4 ? "outline" : "default";
-
-  const label = YEAR_LABEL[year] ?? `Year ${year}`;
-
+function RosterTable({ students }: { students: Student[] }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="num text-[11px] tracking-tight text-foreground">
-        Yr·{year}
-      </span>
-      <Badge
-        variant={variant}
-        className="num text-[10px] uppercase tracking-[0.22em]"
-      >
-        {label}
-      </Badge>
-    </div>
+    <Table>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          <TableHead>Name</TableHead>
+          <TableHead className="hidden sm:table-cell">Email</TableHead>
+          <TableHead className="hidden md:table-cell">Major</TableHead>
+          <TableHead>Year</TableHead>
+          <TableHead className="text-right">&nbsp;</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {students.map((s) => (
+          <TableRow key={s.studentId} className="group">
+            <TableCell>
+              <div className="font-medium">
+                {s.firstName} {s.lastName}
+              </div>
+              <div className="text-xs text-muted-foreground sm:hidden">
+                {s.email}
+              </div>
+            </TableCell>
+            <TableCell className="hidden sm:table-cell">
+              <a
+                href={`mailto:${s.email}`}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                {s.email}
+              </a>
+            </TableCell>
+            <TableCell className="hidden text-muted-foreground md:table-cell">
+              {s.major}
+            </TableCell>
+            <TableCell>
+              <Badge variant="secondary" className="num">
+                {YEAR_LABEL[s.year] ?? `Year ${s.year}`}
+              </Badge>
+            </TableCell>
+            <TableCell className="text-right">
+              <div className="flex justify-end gap-1 opacity-70 transition-opacity group-hover:opacity-100">
+                <Button asChild size="icon-sm" variant="ghost" title="Edit">
+                  <Link href={`/students/${s.studentId}/edit`}>
+                    <IconEdit />
+                  </Link>
+                </Button>
+                <form
+                  action={async () => {
+                    "use server";
+                    await deleteStudent(s.studentId);
+                  }}
+                >
+                  <Button
+                    type="submit"
+                    size="icon-sm"
+                    variant="ghost"
+                    title="Delete"
+                    className="hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <IconTrash />
+                  </Button>
+                </form>
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
 function EmptyState() {
   return (
-    <div className="px-6 py-16 text-center">
-      <div className="mx-auto flex max-w-md flex-col items-center">
-        <span className="font-display text-7xl text-clay">∅</span>
-        <h3 className="mt-4 font-display text-2xl tracking-tight">
-          The book is{" "}
-          <span className="font-display-italic">unspoiled</span>
-        </h3>
-        <p className="mt-2 text-[14px] text-foreground/75">
-          Not a single resident has been entered into the registry. Begin
-          where every good record begins — with a name.
-        </p>
-        <Button
-          asChild
-          size="lg"
-          className="num mt-6 bg-foreground text-background tracking-[0.14em] uppercase hover:bg-clay hover:text-paper"
-        >
-          <Link href="/students/new">Enroll the First Resident</Link>
-        </Button>
+    <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+      <div className="grid size-12 place-items-center rounded-2xl bg-warm/12 text-warm">
+        <IconUsers className="size-6" />
       </div>
+      <h3 className="mt-4 text-base">No residents yet</h3>
+      <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+        Start the registry with your first resident — it only takes a minute.
+      </p>
+      <Button asChild className="mt-5">
+        <Link href="/students/new">
+          <IconPlus />
+          Add the first student
+        </Link>
+      </Button>
     </div>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="mt-auto border-t border-border/70">
+      <div className="mx-auto flex w-full max-w-5xl flex-col items-start justify-between gap-2 px-6 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:px-8">
+        <span>
+          Hearthstead — a small{" "}
+          <span className="font-serif italic">CRUD</span> exercise.
+        </span>
+        <span className="num">Next.js · Prisma · shadcn</span>
+      </div>
+    </footer>
   );
 }

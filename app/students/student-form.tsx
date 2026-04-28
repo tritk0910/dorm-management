@@ -1,8 +1,20 @@
 import Link from "next/link";
+import {
+  IconArrowLeft,
+  IconCheck,
+  IconClipboardList,
+} from "@tabler/icons-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import type { Student } from "@/app/generated/prisma/client";
 
 type Mode = "create" | "edit";
@@ -19,263 +31,195 @@ export function StudentForm({
   const isEdit = mode === "edit";
 
   return (
-    <main>
-      {/* —— page masthead —— */}
-      <header className="border-b border-foreground/15">
-        <div className="mx-auto flex max-w-[1300px] items-center justify-between px-6 py-3 sm:px-10">
-          <Link
-            href="/students"
-            className="num text-[11px] uppercase tracking-[0.22em] text-muted-foreground hover:text-clay"
-          >
-            ← Back to the registry
-          </Link>
-          <span className="num text-[10px] uppercase tracking-[0.32em] text-clay">
-            ✻ {isEdit ? "Amendment Form" : "Enrollment Form"} ✻
-          </span>
-          <span className="num hidden text-[11px] uppercase tracking-[0.22em] text-muted-foreground sm:inline">
-            Form {isEdit ? "RH-2" : "RH-1"}
-          </span>
-        </div>
-        <div className="rule text-foreground/40" />
-      </header>
+    <>
+      <Nav />
 
-      <section className="mx-auto max-w-[1100px] px-6 pt-12 pb-20 sm:px-10">
-        <div className="grid grid-cols-12 gap-10">
-          {/* Left rail — title + intent */}
-          <aside className="col-span-12 lg:col-span-5">
-            <span className="num text-[10px] uppercase tracking-[0.4em] text-clay">
-              ¶ {isEdit ? "Amend an existing entry" : "A new entry, freshly inked"}
-            </span>
-            <h1 className="mt-3 font-display text-[clamp(2.5rem,6vw,4.5rem)] leading-[0.95] tracking-[-0.03em]">
-              {isEdit ? (
-                <>
-                  Amend the
-                  <br />
-                  <span className="font-display-italic">record</span>
-                </>
-              ) : (
-                <>
-                  Enroll a
-                  <br />
-                  new <span className="font-display-italic">resident</span>
-                </>
-              )}
-            </h1>
-            <p className="mt-4 max-w-sm text-[15px] leading-relaxed text-foreground/80">
-              {isEdit
-                ? "Make corrections, change a major, mend a phone number — the registrar will not mind. The book forgives all amendments."
-                : "Fill the entry slowly and well. Names tend to stick around longer than rooms do."}
-            </p>
+      <main className="mx-auto w-full max-w-xl px-6 py-12 sm:px-8">
+        <Link
+          href="/students"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <IconArrowLeft className="size-3.5" />
+          Back to residents
+        </Link>
 
-            {isEdit && student && (
-              <div className="mt-8 rounded-md border border-foreground/15 bg-card p-5">
-                <span className="num text-[10px] uppercase tracking-[0.32em] text-muted-foreground">
-                  Currently on file
-                </span>
-                <p className="mt-2 font-display text-2xl tracking-tight">
-                  {student.lastName},{" "}
-                  <span className="font-display-italic text-foreground/85">
-                    {student.firstName}
-                  </span>
-                </p>
-                <p className="num mt-1 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                  ID · {String(student.studentId).padStart(5, "0")} · Yr {student.year}
-                </p>
+        <h1 className="mt-3 text-3xl tracking-tight sm:text-4xl">
+          {isEdit ? (
+            <>
+              Edit{" "}
+              <span className="font-serif italic text-warm">
+                {student?.firstName ?? "resident"}
+              </span>
+            </>
+          ) : (
+            <>
+              Add a <span className="font-serif italic text-warm">resident</span>
+            </>
+          )}
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {isEdit
+            ? "Update the details below — the registry will keep up."
+            : "Just the basics. You can always change anything later."}
+        </p>
+
+        <Card className="mt-8 ring-foreground/8">
+          <CardHeader className="border-b border-border/70 pb-4">
+            <CardTitle className="text-base">Student details</CardTitle>
+            <CardDescription>All fields are required.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form action={action} className="flex flex-col gap-5">
+              <Row>
+                <Field label="First name" htmlFor="firstName">
+                  <Input
+                    id="firstName"
+                    name="firstName"
+                    required
+                    autoComplete="given-name"
+                    defaultValue={student?.firstName ?? ""}
+                    placeholder="Adaeze"
+                    className="rounded-md"
+                  />
+                </Field>
+                <Field label="Last name" htmlFor="lastName">
+                  <Input
+                    id="lastName"
+                    name="lastName"
+                    required
+                    autoComplete="family-name"
+                    defaultValue={student?.lastName ?? ""}
+                    placeholder="Okafor"
+                    className="rounded-md"
+                  />
+                </Field>
+              </Row>
+
+              <Row>
+                <Field label="Date of birth" htmlFor="dob">
+                  <Input
+                    id="dob"
+                    name="dob"
+                    type="date"
+                    required
+                    defaultValue={
+                      student
+                        ? student.dob.toISOString().split("T")[0]
+                        : undefined
+                    }
+                    className="rounded-md"
+                  />
+                </Field>
+                <Field label="Gender" htmlFor="gender">
+                  <NativeSelect
+                    id="gender"
+                    name="gender"
+                    required
+                    defaultValue={student?.gender ?? ""}
+                  >
+                    <option value="" disabled>
+                      Select…
+                    </option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </NativeSelect>
+                </Field>
+              </Row>
+
+              <Row>
+                <Field label="Email" htmlFor="email">
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    defaultValue={student?.email ?? ""}
+                    placeholder="name@school.edu"
+                    className="rounded-md"
+                  />
+                </Field>
+                <Field label="Phone" htmlFor="phone">
+                  <Input
+                    id="phone"
+                    name="phone"
+                    required
+                    autoComplete="tel"
+                    inputMode="tel"
+                    defaultValue={student?.phone ?? ""}
+                    placeholder="555-0142"
+                    className="rounded-md"
+                  />
+                </Field>
+              </Row>
+
+              <Row>
+                <Field label="Major" htmlFor="major">
+                  <Input
+                    id="major"
+                    name="major"
+                    required
+                    defaultValue={student?.major ?? ""}
+                    placeholder="Architecture"
+                    className="rounded-md"
+                  />
+                </Field>
+                <Field label="Year" htmlFor="year">
+                  <Input
+                    id="year"
+                    name="year"
+                    type="number"
+                    min={1}
+                    max={6}
+                    required
+                    defaultValue={student?.year ?? ""}
+                    placeholder="1–6"
+                    className="rounded-md"
+                  />
+                </Field>
+              </Row>
+
+              <div className="mt-2 flex items-center justify-end gap-2">
+                <Button asChild variant="ghost" size="lg">
+                  <Link href="/students">Cancel</Link>
+                </Button>
+                <Button type="submit" size="lg">
+                  <IconCheck />
+                  {isEdit ? "Save changes" : "Add student"}
+                </Button>
               </div>
-            )}
+            </form>
+          </CardContent>
+        </Card>
+      </main>
 
-            <div className="rule mt-8 text-foreground/40" />
-            <ul className="num mt-4 space-y-1.5 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-              <li>· All fields are required</li>
-              <li>· Year between 1 and 6</li>
-              <li>· Email kept private to the office</li>
-            </ul>
-          </aside>
-
-          {/* Right — the form proper */}
-          <div className="col-span-12 lg:col-span-7">
-            <Card className="rounded-md ring-foreground/15">
-              <CardContent>
-                <form action={action} className="flex flex-col gap-7">
-                  {/* identity */}
-                  <Fieldset legend="Identity" code="§I">
-                    <Row>
-                      <Field label="First name" htmlFor="firstName">
-                        <Input
-                          id="firstName"
-                          name="firstName"
-                          required
-                          autoComplete="given-name"
-                          defaultValue={student?.firstName ?? ""}
-                          className="rounded-md"
-                          placeholder="e.g. Adaeze"
-                        />
-                      </Field>
-                      <Field label="Last name" htmlFor="lastName">
-                        <Input
-                          id="lastName"
-                          name="lastName"
-                          required
-                          autoComplete="family-name"
-                          defaultValue={student?.lastName ?? ""}
-                          className="rounded-md"
-                          placeholder="e.g. Okafor"
-                        />
-                      </Field>
-                    </Row>
-                    <Row>
-                      <Field label="Date of birth" htmlFor="dob">
-                        <Input
-                          id="dob"
-                          name="dob"
-                          type="date"
-                          required
-                          defaultValue={
-                            student
-                              ? student.dob.toISOString().split("T")[0]
-                              : undefined
-                          }
-                          className="rounded-md"
-                        />
-                      </Field>
-                      <Field label="Gender" htmlFor="gender">
-                        <NativeSelect
-                          id="gender"
-                          name="gender"
-                          required
-                          defaultValue={student?.gender ?? ""}
-                        >
-                          <option value="" disabled>
-                            Select…
-                          </option>
-                          <option value="Male">Male</option>
-                          <option value="Female">Female</option>
-                          <option value="Other">Other</option>
-                        </NativeSelect>
-                      </Field>
-                    </Row>
-                  </Fieldset>
-
-                  {/* contact */}
-                  <Fieldset legend="Contact" code="§II">
-                    <Row>
-                      <Field label="Email" htmlFor="email">
-                        <Input
-                          id="email"
-                          name="email"
-                          type="email"
-                          required
-                          autoComplete="email"
-                          defaultValue={student?.email ?? ""}
-                          className="rounded-md"
-                          placeholder="name@school.edu"
-                        />
-                      </Field>
-                      <Field label="Phone" htmlFor="phone">
-                        <Input
-                          id="phone"
-                          name="phone"
-                          required
-                          autoComplete="tel"
-                          inputMode="tel"
-                          defaultValue={student?.phone ?? ""}
-                          className="rounded-md"
-                          placeholder="555-0142"
-                        />
-                      </Field>
-                    </Row>
-                  </Fieldset>
-
-                  {/* studies */}
-                  <Fieldset legend="Studies" code="§III">
-                    <Row>
-                      <Field label="Major" htmlFor="major" wide>
-                        <Input
-                          id="major"
-                          name="major"
-                          required
-                          defaultValue={student?.major ?? ""}
-                          className="rounded-md"
-                          placeholder="e.g. Architecture"
-                        />
-                      </Field>
-                      <Field label="Year" htmlFor="year">
-                        <Input
-                          id="year"
-                          name="year"
-                          type="number"
-                          min={1}
-                          max={6}
-                          required
-                          defaultValue={student?.year ?? ""}
-                          className="rounded-md"
-                          placeholder="1–6"
-                        />
-                      </Field>
-                    </Row>
-                  </Fieldset>
-
-                  <div className="rule text-foreground/40" />
-
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <span className="num text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                      Signed at the registrar’s desk
-                    </span>
-                    <div className="flex gap-2">
-                      <Button
-                        asChild
-                        variant="ghost"
-                        size="lg"
-                        className="num tracking-[0.14em] uppercase"
-                      >
-                        <Link href="/students">Cancel</Link>
-                      </Button>
-                      <Button
-                        type="submit"
-                        size="lg"
-                        className="num bg-foreground text-background tracking-[0.14em] uppercase hover:bg-clay hover:text-paper"
-                      >
-                        {isEdit ? "Save Amendments" : "Inscribe"}
-                        <span aria-hidden className="ml-1">
-                          →
-                        </span>
-                      </Button>
-                    </div>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-    </main>
+      <Footer />
+    </>
   );
 }
 
 /* ——————————————————————————————————————————————————————————— */
 
-function Fieldset({
-  legend,
-  code,
-  children,
-}: {
-  legend: string;
-  code: string;
-  children: React.ReactNode;
-}) {
+function Nav() {
   return (
-    <fieldset className="border-0 p-0">
-      <div className="mb-3 flex items-baseline justify-between">
-        <legend className="font-display text-2xl tracking-[-0.01em]">
-          {legend}
-        </legend>
-        <span className="num text-[10px] uppercase tracking-[0.32em] text-clay">
-          {code}
-        </span>
+    <header className="sticky top-0 z-10 border-b border-border/70 bg-background/80 backdrop-blur">
+      <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-3 sm:px-8">
+        <Link href="/" className="flex items-center gap-2">
+          <span className="grid size-7 place-items-center rounded-md bg-foreground text-background">
+            <IconClipboardList className="size-4" />
+          </span>
+          <span className="text-base tracking-tight">
+            Hearth<span className="font-serif italic text-warm">stead</span>
+          </span>
+        </Link>
+        <nav className="flex items-center gap-1">
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/students">Residents</Link>
+          </Button>
+        </nav>
       </div>
-      <div className="rule mb-4 text-foreground/30" />
-      <div className="flex flex-col gap-4">{children}</div>
-    </fieldset>
+    </header>
   );
 }
 
@@ -286,20 +230,15 @@ function Row({ children }: { children: React.ReactNode }) {
 function Field({
   label,
   htmlFor,
-  wide,
   children,
 }: {
   label: string;
   htmlFor: string;
-  wide?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div className={wide ? "sm:col-span-1" : undefined}>
-      <Label
-        htmlFor={htmlFor}
-        className="num mb-1.5 text-[10px] uppercase tracking-[0.28em] text-muted-foreground"
-      >
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={htmlFor} className="text-sm">
         {label}
       </Label>
       {children}
@@ -311,8 +250,8 @@ function NativeSelect({
   className,
   ...props
 }: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  // Mimic shadcn Input look so the form is visually cohesive without a Radix
-  // Select (which would force a client component on a server-action form).
+  // Native <select> styled to match shadcn Input — keeps the form a server-
+  // action form (no client-side wrapper required for Radix Select).
   return (
     <select
       {...props}
@@ -328,5 +267,19 @@ function NativeSelect({
         paddingRight: "2rem",
       }}
     />
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="mt-auto border-t border-border/70">
+      <div className="mx-auto flex w-full max-w-5xl flex-col items-start justify-between gap-2 px-6 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:px-8">
+        <span>
+          Hearthstead — a small{" "}
+          <span className="font-serif italic">CRUD</span> exercise.
+        </span>
+        <span className="num">Next.js · Prisma · shadcn</span>
+      </div>
+    </footer>
   );
 }

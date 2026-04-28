@@ -1,27 +1,26 @@
 import type { Metadata } from "next";
-import { Fraunces, Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 
-const fraunces = Fraunces({
-  variable: "--font-display",
-  subsets: ["latin"],
-  axes: ["SOFT", "WONK", "opsz"],
-});
-
-const instrument = Instrument_Sans({
+const geist = Geist({
   variable: "--font-sans",
   subsets: ["latin"],
 });
 
-const jetbrains = JetBrains_Mono({
+const geistMono = Geist_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
 });
 
+const instrument = Instrument_Serif({
+  variable: "--font-serif",
+  weight: "400",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "Hearthstead — A Residence Hall Registry",
-  description:
-    "A small, well-kept ledger for the everyday work of student housing.",
+  title: "Hearthstead — Dorm Management",
+  description: "A simple, well-kept registry for student housing.",
 };
 
 export default function RootLayout({
@@ -32,9 +31,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${fraunces.variable} ${instrument.variable} ${jetbrains.variable} h-full antialiased`}
+      className={`${geist.variable} ${geistMono.variable} ${instrument.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground selection:bg-foreground selection:text-background">
+      <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}
       </body>
     </html>
