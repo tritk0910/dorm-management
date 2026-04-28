@@ -1,27 +1,36 @@
 import { PrismaClient } from "@/app/generated/prisma/client";
 import { PrismaMssql } from "@prisma/adapter-mssql";
 
-const url = new URL(process.env.DATABASE_URL!.replace("sqlserver://", "mssql://"));
+const rawUrl = process.env.DATABASE_URL!;
+// Format: sqlserver://HOST:PORT;key=value;...
+const withoutScheme = rawUrl.replace(/^sqlserver:\/\//, "");
+const [hostPort, ...pairs] = withoutScheme.split(";");
+const [server, rawPort] = hostPort.split(":");
+const params = Object.fromEntries(
+  pairs.filter(Boolean).map((p) => p.split("=") as [string, string])
+);
 
-const adapter = new PrismaMssql({
-  server: url.hostname,
-  port: url.port ? parseInt(url.port) : 1433,
-  database: url.searchParams.get("database") ?? "",
-  user: url.searchParams.get("user") ?? "",
-  password: url.searchParams.get("password") ?? "",
+const config = {
+  server,
+  port: Number(rawPort) || 1433,
+  database: params.database,
+  user: params.user,
+  password: params.password,
   options: {
-    encrypt: url.searchParams.get("encrypt") !== "false",
-    trustServerCertificate: url.searchParams.get("trustServerCertificate") === "true",
+    encrypt: params.encrypt !== "false",
+    trustServerCertificate: params.trustServerCertificate === "true",
   },
-});
+};
+
+const adapter = new PrismaMssql(config);
 
 const prismaClientSingleton = () => {
-  return new PrismaClient({ adapter })
-}
+  return new PrismaClient({ adapter });
+};
 declare const globalThis: {
   prismaGlobal: ReturnType<typeof prismaClientSingleton>;
 } & typeof global;
-const prisma = globalThis.prismaGlobal ?? prismaClientSingleton()
+const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
 
-export default prisma
-if (process.env.NODE_ENV !== 'production') globalThis.prismaGlobal = prisma
+export default prisma;
+if (process.env.NODE_ENV !== "production") globalThis.prismaGlobal = prisma;
