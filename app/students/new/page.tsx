@@ -1,61 +1,6 @@
-import Link from 'next/link'
-import { createStudent } from '../../lib/actions/student'
+import { createStudent } from "../../lib/actions/student";
+import { StudentForm } from "../student-form";
 
 export default function Page() {
-  return (
-    <main className="p-8 max-w-lg">
-      <div className="flex items-center gap-4 mb-6">
-        <Link href="/students" className="text-gray-500 hover:underline">
-          ← Back
-        </Link>
-        <h1 className="text-2xl font-bold">Add Student</h1>
-      </div>
-
-      <form action={createStudent} className="flex flex-col gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">First Name</label>
-          <input name="firstName" required className="border rounded w-full p-2" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Last Name</label>
-          <input name="lastName" required className="border rounded w-full p-2" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Date of Birth</label>
-          <input name="dob" type="date" required className="border rounded w-full p-2" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Gender</label>
-          <select name="gender" required className="border rounded w-full p-2">
-            <option value="">Select...</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Phone</label>
-          <input name="phone" required className="border rounded w-full p-2" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
-          <input name="email" type="email" required className="border rounded w-full p-2" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Major</label>
-          <input name="major" required className="border rounded w-full p-2" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Year</label>
-          <input name="year" type="number" min={1} max={6} required className="border rounded w-full p-2" />
-        </div>
-        <button
-          type="submit"
-          className="bg-blue-600 text-white py-2 rounded hover:bg-blue-700 mt-2"
-        >
-          Create Student
-        </button>
-      </form>
-    </main>
-  )
+  return <StudentForm mode="create" action={createStudent} />;
 }
