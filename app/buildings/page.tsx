@@ -1,17 +1,17 @@
 import Link from "next/link";
+import { Nav } from "@/components/nav";
+import { Footer } from "@/components/footer";
 import {
   IconArrowLeft,
+  IconBuildingCommunity,
   IconEdit,
   IconPlus,
   IconTrash,
-  IconUsers,
 } from "@tabler/icons-react";
 
 import prisma from "../../lib/db";
-import { deleteStudent } from "../lib/actions/student";
-import type { Student } from "@/app/generated/prisma/client";
-import { Nav } from "@/components/nav";
-import { Footer } from "@/components/footer";
+import { deleteBuilding } from "../lib/actions/building";
+import type { Building } from "@/app/generated/prisma/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -32,30 +32,20 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const YEAR_LABEL: Record<number, string> = {
-  1: "Freshman",
-  2: "Sophomore",
-  3: "Junior",
-  4: "Senior",
-  5: "5th Year",
-  6: "Graduate",
-};
-
 export default async function Page() {
-  const students = await prisma.student.findMany({
-    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+  const buildings = await prisma.building.findMany({
+    orderBy: { buildingName: "asc" },
+    include: { _count: { select: { rooms: true } } },
   });
 
-  const total = students.length;
-  const majors = new Set(students.map((s) => s.major)).size;
-  const upperclass = students.filter((s) => s.year >= 3).length;
+  const total = buildings.length;
+  const totalRooms = buildings.reduce((sum, b) => sum + b._count.rooms, 0);
 
   return (
     <>
       <Nav />
 
       <main className="mx-auto w-full max-w-5xl px-6 py-12 sm:px-8">
-        {/* Header */}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <Link
@@ -66,43 +56,37 @@ export default async function Page() {
               Home
             </Link>
             <h1 className="mt-2 text-3xl tracking-tight sm:text-4xl">
-              Residents
+              Buildings
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Everyone who calls Hearthstead home this term.
+              Residence halls that make up Hearthstead.
             </p>
           </div>
           <Button asChild size="lg">
-            <Link href="/students/new">
+            <Link href="/buildings/new">
               <IconPlus />
-              Add student
+              Add building
             </Link>
           </Button>
         </div>
 
-        {/* Stats */}
         <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Stat label="On file" value={total} caption="total residents" />
-          <Stat label="Majors" value={majors} caption="distinct fields" />
-          <Stat
-            label="Upperclass"
-            value={upperclass}
-            caption="year 3 and above"
-          />
+          <Stat label="Buildings" value={total} caption="on campus" />
+          <Stat label="Total rooms" value={totalRooms} caption="across all buildings" />
+          <Stat label="Avg rooms" value={total > 0 ? Math.round(totalRooms / total) : 0} caption="per building" />
         </div>
 
-        {/* Table or empty */}
         <Card className="mt-6 ring-foreground/8">
           <CardHeader className="border-b border-border/70 pb-4">
-            <CardTitle className="text-base">The roster</CardTitle>
+            <CardTitle className="text-base">All buildings</CardTitle>
             <CardDescription>
               {total === 0
                 ? "Nothing to see yet — add the first one."
-                : `${total} ${total === 1 ? "entry" : "entries"}, sorted by surname.`}
+                : `${total} ${total === 1 ? "building" : "buildings"}, sorted by name.`}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            {total === 0 ? <EmptyState /> : <RosterTable students={students} />}
+            {total === 0 ? <EmptyState /> : <BuildingTable buildings={buildings} />}
           </CardContent>
         </Card>
       </main>
@@ -113,6 +97,7 @@ export default async function Page() {
 }
 
 /* ——————————————————————————————————————————————————————————— */
+
 
 function Stat({
   label,
@@ -136,56 +121,45 @@ function Stat({
   );
 }
 
-function RosterTable({ students }: { students: Student[] }) {
+type BuildingWithCount = Building & { _count: { rooms: number } };
+
+function BuildingTable({ buildings }: { buildings: BuildingWithCount[] }) {
   return (
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           <TableHead>Name</TableHead>
-          <TableHead className="hidden sm:table-cell">Email</TableHead>
-          <TableHead className="hidden md:table-cell">Major</TableHead>
-          <TableHead>Year</TableHead>
+          <TableHead className="hidden sm:table-cell">Address</TableHead>
+          <TableHead>Rooms</TableHead>
           <TableHead className="text-right">&nbsp;</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {students.map((s) => (
-          <TableRow key={s.studentId} className="group">
+        {buildings.map((b) => (
+          <TableRow key={b.buildingId} className="group">
             <TableCell>
-              <div className="font-medium">
-                {s.firstName} {s.lastName}
-              </div>
-              <div className="text-xs text-muted-foreground sm:hidden">
-                {s.email}
-              </div>
+              <div className="font-medium">{b.buildingName}</div>
+              <div className="text-xs text-muted-foreground sm:hidden">{b.address}</div>
             </TableCell>
-            <TableCell className="hidden sm:table-cell">
-              <a
-                href={`mailto:${s.email}`}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                {s.email}
-              </a>
-            </TableCell>
-            <TableCell className="hidden text-muted-foreground md:table-cell">
-              {s.major}
+            <TableCell className="hidden text-muted-foreground sm:table-cell">
+              {b.address}
             </TableCell>
             <TableCell>
               <Badge variant="secondary" className="num">
-                {YEAR_LABEL[s.year] ?? `Year ${s.year}`}
+                {b._count.rooms}
               </Badge>
             </TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-1 opacity-70 transition-opacity group-hover:opacity-100">
                 <Button asChild size="icon-sm" variant="ghost" title="Edit">
-                  <Link href={`/students/${s.studentId}/edit`}>
+                  <Link href={`/buildings/${b.buildingId}/edit`}>
                     <IconEdit />
                   </Link>
                 </Button>
                 <form
                   action={async () => {
                     "use server";
-                    await deleteStudent(s.studentId);
+                    await deleteBuilding(b.buildingId);
                   }}
                 >
                   <Button
@@ -211,16 +185,16 @@ function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
       <div className="grid size-12 place-items-center rounded-2xl bg-warm/12 text-warm">
-        <IconUsers className="size-6" />
+        <IconBuildingCommunity className="size-6" />
       </div>
-      <h3 className="mt-4 text-base">No residents yet</h3>
+      <h3 className="mt-4 text-base">No buildings yet</h3>
       <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-        Start the registry with your first resident — it only takes a minute.
+        Add your first residence hall to start organizing rooms.
       </p>
       <Button asChild className="mt-5">
-        <Link href="/students/new">
+        <Link href="/buildings/new">
           <IconPlus />
-          Add the first student
+          Add the first building
         </Link>
       </Button>
     </div>

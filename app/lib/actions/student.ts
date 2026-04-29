@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import prisma from "../../../lib/db";
 
 export async function createStudent(formData: FormData) {
+  const preferences = formData.getAll("preferences").join(",");
+
   await prisma.student.create({
     data: {
       firstName: formData.get("firstName") as string,
@@ -15,6 +17,7 @@ export async function createStudent(formData: FormData) {
       email: formData.get("email") as string,
       major: formData.get("major") as string,
       year: Number(formData.get("year")),
+      preferences,
     },
   });
 
@@ -23,6 +26,8 @@ export async function createStudent(formData: FormData) {
 }
 
 export async function updateStudent(id: number, formData: FormData) {
+  const preferences = formData.getAll("preferences").join(",");
+
   await prisma.student.update({
     where: { studentId: id },
     data: {
@@ -34,6 +39,7 @@ export async function updateStudent(id: number, formData: FormData) {
       email: formData.get("email") as string,
       major: formData.get("major") as string,
       year: Number(formData.get("year")),
+      preferences,
     },
   });
 

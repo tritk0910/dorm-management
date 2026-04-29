@@ -27,23 +27,29 @@ model Room {
   building            Building             @relation(fields: [buildingId], references: [buildingId])
   assignments         RoomAssignment[]
   maintenanceRequests MaintenanceRequest[]
+  roomChangeRequests  RoomChangeRequest[]
+  housingApplications HousingApplication[]
 
   @@map("Room")
 }
 
 model Student {
-  studentId Int      @id @default(autoincrement()) @map("StudentID")
-  firstName String   @map("FirstName") @db.NVarChar(50)
-  lastName  String   @map("LastName") @db.NVarChar(50)
-  dob       DateTime @map("DOB") @db.Date
-  gender    String   @map("Gender") @db.NVarChar(10)
-  phone     String   @map("Phone") @db.NVarChar(20)
-  email     String   @map("Email") @db.NVarChar(100)
-  major     String   @map("Major") @db.NVarChar(100)
-  year      Int      @map("Year")
+  studentId   Int      @id @default(autoincrement()) @map("StudentID")
+  firstName   String   @map("FirstName") @db.NVarChar(50)
+  lastName    String   @map("LastName") @db.NVarChar(50)
+  dob         DateTime @map("DOB") @db.Date
+  gender      String   @map("Gender") @db.NVarChar(10)
+  phone       String   @map("Phone") @db.NVarChar(20)
+  email       String   @map("Email") @db.NVarChar(100)
+  major       String   @map("Major") @db.NVarChar(100)
+  year        Int      @map("Year")
+  preferences String   @default("") @map("Preferences") @db.NVarChar(500)
 
   assignments         RoomAssignment[]
   maintenanceRequests MaintenanceRequest[]
+  housingApplications HousingApplication[]
+  roomChangeRequests  RoomChangeRequest[]
+  users               User[]
 
   @@map("Student")
 }
@@ -98,6 +104,7 @@ model Staff {
   email   String @map("Email") @db.NVarChar(100)
 
   maintenanceRequests MaintenanceRequest[]
+  users               User[]
 
   @@map("Staff")
 }
@@ -109,11 +116,54 @@ model MaintenanceRequest {
   description String   @map("Description") @db.NVarChar(1000)
   requestDate DateTime @map("RequestDate") @db.Date
   status      String   @map("Status") @db.NVarChar(20)
-  staffId     Int      @map("StaffID")
+  staffId     Int?     @map("StaffID")
 
   room    Room    @relation(fields: [roomId], references: [roomId])
   student Student @relation(fields: [studentId], references: [studentId])
-  staff   Staff   @relation(fields: [staffId], references: [staffId])
+  staff   Staff?  @relation(fields: [staffId], references: [staffId])
 
   @@map("MaintenanceRequest")
+}
+
+model User {
+  userId       Int    @id @default(autoincrement()) @map("UserID")
+  username     String @unique @map("Username") @db.NVarChar(100)
+  passwordHash String @map("PasswordHash") @db.NVarChar(300)
+  role         String @map("Role") @db.NVarChar(20)
+  studentId    Int?   @map("StudentID")
+  staffId      Int?   @map("StaffID")
+
+  student Student? @relation(fields: [studentId], references: [studentId])
+  staff   Staff?   @relation(fields: [staffId], references: [staffId])
+
+  @@map("Users")
+}
+
+model HousingApplication {
+  applicationId     Int      @id @default(autoincrement()) @map("ApplicationID")
+  studentId         Int      @map("StudentID")
+  preferredRoomType String   @map("PreferredRoomType") @db.NVarChar(50)
+  notes             String   @default("") @map("Notes") @db.NVarChar(1000)
+  status            String   @default("Pending") @map("Status") @db.NVarChar(20)
+  submittedAt       DateTime @default(now()) @map("SubmittedAt")
+  matchedRoomId     Int?     @map("MatchedRoomID")
+
+  student     Student @relation(fields: [studentId], references: [studentId])
+  matchedRoom Room?   @relation(fields: [matchedRoomId], references: [roomId])
+
+  @@map("HousingApplication")
+}
+
+model RoomChangeRequest {
+  changeRequestId Int      @id @default(autoincrement()) @map("ChangeRequestID")
+  studentId       Int      @map("StudentID")
+  fromRoomId      Int      @map("FromRoomID")
+  reason          String   @map("Reason") @db.NVarChar(1000)
+  status          String   @default("Pending") @map("Status") @db.NVarChar(20)
+  submittedAt     DateTime @default(now()) @map("SubmittedAt")
+
+  student  Student @relation(fields: [studentId], references: [studentId])
+  fromRoom Room    @relation(fields: [fromRoomId], references: [roomId])
+
+  @@map("RoomChangeRequest")
 }

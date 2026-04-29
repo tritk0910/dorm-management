@@ -1,9 +1,8 @@
 import Link from "next/link";
-import {
-  IconArrowLeft,
-  IconCheck,
-  IconClipboardList,
-} from "@tabler/icons-react";
+import { IconArrowLeft, IconCheck } from "@tabler/icons-react";
+
+import { Nav } from "@/components/nav";
+import { Footer } from "@/components/footer";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +16,15 @@ import {
 } from "@/components/ui/card";
 import type { Student } from "@/app/generated/prisma/client";
 
+const PREFERENCES = [
+  { value: "quiet", label: "Quiet" },
+  { value: "social", label: "Social" },
+  { value: "early-bird", label: "Early bird" },
+  { value: "night-owl", label: "Night owl" },
+  { value: "study-focused", label: "Study-focused" },
+  { value: "no-smoking", label: "No smoking" },
+];
+
 type Mode = "create" | "edit";
 
 export function StudentForm({
@@ -29,6 +37,7 @@ export function StudentForm({
   student?: Student;
 }) {
   const isEdit = mode === "edit";
+  const currentPrefs = student?.preferences?.split(",").filter(Boolean) ?? [];
 
   return (
     <>
@@ -66,7 +75,7 @@ export function StudentForm({
         <Card className="mt-8 ring-foreground/8">
           <CardHeader className="border-b border-border/70 pb-4">
             <CardTitle className="text-base">Student details</CardTitle>
-            <CardDescription>All fields are required.</CardDescription>
+            <CardDescription>All fields except preferences are required.</CardDescription>
           </CardHeader>
           <CardContent>
             <form action={action} className="flex flex-col gap-5">
@@ -180,6 +189,28 @@ export function StudentForm({
                 </Field>
               </Row>
 
+              {/* Preferences */}
+              <div className="flex flex-col gap-2">
+                <Label className="text-sm">Roommate preferences</Label>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {PREFERENCES.map((pref) => (
+                    <label
+                      key={pref.value}
+                      className="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm transition-colors hover:bg-muted/50 has-[:checked]:border-ring has-[:checked]:bg-ring/5"
+                    >
+                      <input
+                        type="checkbox"
+                        name="preferences"
+                        value={pref.value}
+                        defaultChecked={currentPrefs.includes(pref.value)}
+                        className="accent-foreground"
+                      />
+                      {pref.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <div className="mt-2 flex items-center justify-end gap-2">
                 <Button asChild variant="ghost" size="lg">
                   <Link href="/students">Cancel</Link>
@@ -200,28 +231,6 @@ export function StudentForm({
 }
 
 /* ——————————————————————————————————————————————————————————— */
-
-function Nav() {
-  return (
-    <header className="sticky top-0 z-10 border-b border-border/70 bg-background/80 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-3 sm:px-8">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="grid size-7 place-items-center rounded-md bg-foreground text-background">
-            <IconClipboardList className="size-4" />
-          </span>
-          <span className="text-base tracking-tight">
-            Hearth<span className="font-serif italic text-warm">stead</span>
-          </span>
-        </Link>
-        <nav className="flex items-center gap-1">
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/students">Residents</Link>
-          </Button>
-        </nav>
-      </div>
-    </header>
-  );
-}
 
 function Row({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{children}</div>;
@@ -250,15 +259,13 @@ function NativeSelect({
   className,
   ...props
 }: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  // Native <select> styled to match shadcn Input — keeps the form a server-
-  // action form (no client-side wrapper required for Radix Select).
   return (
     <select
       {...props}
       className={[
         "h-9 w-full min-w-0 rounded-md border border-input bg-input/30 px-3 py-1 text-sm transition-colors outline-none",
         "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
-        "appearance-none bg-no-repeat bg-[right_0.6rem_center]",
+        "appearance-none bg-no-repeat bg-position-[right_0.6rem_center]",
         className ?? "",
       ].join(" ")}
       style={{
@@ -267,19 +274,5 @@ function NativeSelect({
         paddingRight: "2rem",
       }}
     />
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="mt-auto border-t border-border/70">
-      <div className="mx-auto flex w-full max-w-5xl flex-col items-start justify-between gap-2 px-6 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:px-8">
-        <span>
-          Hearthstead — a small{" "}
-          <span className="font-serif italic">CRUD</span> exercise.
-        </span>
-        <span className="num">Next.js · Prisma · shadcn</span>
-      </div>
-    </footer>
   );
 }
