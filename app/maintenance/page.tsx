@@ -1,17 +1,16 @@
 import Link from "next/link";
+import { Nav } from "@/components/nav";
+import { Footer } from "@/components/footer";
 import {
   IconArrowLeft,
   IconEdit,
   IconPlus,
+  IconTool,
   IconTrash,
-  IconUsers,
 } from "@tabler/icons-react";
 
 import prisma from "../../lib/db";
-import { deleteStudent } from "../lib/actions/student";
-import type { Student } from "@/app/generated/prisma/client";
-import { Nav } from "@/components/nav";
-import { Footer } from "@/components/footer";
+import { deleteMaintenanceRequest } from "../lib/actions/maintenance";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -32,30 +31,40 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const YEAR_LABEL: Record<number, string> = {
-  1: "Freshman",
-  2: "Sophomore",
-  3: "Junior",
-  4: "Senior",
-  5: "5th Year",
-  6: "Graduate",
+const STATUS_COLOR: Record<string, string> = {
+  Pending: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-300",
+  "In Progress": "bg-blue-500/10 text-blue-700 dark:text-blue-300",
+  Resolved: "bg-green-500/10 text-green-700 dark:text-green-300",
 };
 
+function fmt(date: Date) {
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default async function Page() {
-  const students = await prisma.student.findMany({
-    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+  const requests = await prisma.maintenanceRequest.findMany({
+    orderBy: { requestDate: "desc" },
+    include: {
+      room: { include: { building: true } },
+      student: true,
+      staff: true,
+    },
   });
 
-  const total = students.length;
-  const majors = new Set(students.map((s) => s.major)).size;
-  const upperclass = students.filter((s) => s.year >= 3).length;
+  const total = requests.length;
+  const pending = requests.filter((r) => r.status === "Pending").length;
+  const inProgress = requests.filter((r) => r.status === "In Progress").length;
+  const resolved = requests.filter((r) => r.status === "Resolved").length;
 
   return (
     <>
       <Nav />
 
       <main className="mx-auto w-full max-w-5xl px-6 py-12 sm:px-8">
-        {/* Header */}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <Link
@@ -66,43 +75,38 @@ export default async function Page() {
               Home
             </Link>
             <h1 className="mt-2 text-3xl tracking-tight sm:text-4xl">
-              Residents
+              Maintenance
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Everyone who calls Hearthstead home this term.
+              Repair and service requests across all residence halls.
             </p>
           </div>
           <Button asChild size="lg">
-            <Link href="/students/new">
+            <Link href="/maintenance/new">
               <IconPlus />
-              Add student
+              New request
             </Link>
           </Button>
         </div>
 
-        {/* Stats */}
-        <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Stat label="On file" value={total} caption="total residents" />
-          <Stat label="Majors" value={majors} caption="distinct fields" />
-          <Stat
-            label="Upperclass"
-            value={upperclass}
-            caption="year 3 and above"
-          />
+        <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-4">
+          <Stat label="Total" value={total} caption="all requests" />
+          <Stat label="Pending" value={pending} caption="awaiting action" />
+          <Stat label="In progress" value={inProgress} caption="being handled" />
+          <Stat label="Resolved" value={resolved} caption="completed" />
         </div>
 
-        {/* Table or empty */}
         <Card className="mt-6 ring-foreground/8">
           <CardHeader className="border-b border-border/70 pb-4">
-            <CardTitle className="text-base">The roster</CardTitle>
+            <CardTitle className="text-base">All requests</CardTitle>
             <CardDescription>
               {total === 0
-                ? "Nothing to see yet — add the first one."
-                : `${total} ${total === 1 ? "entry" : "entries"}, sorted by surname.`}
+                ? "Nothing to see yet — submit the first request."
+                : `${total} ${total === 1 ? "request" : "requests"}, newest first.`}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            {total === 0 ? <EmptyState /> : <RosterTable students={students} />}
+            {total === 0 ? <EmptyState /> : <MaintenanceTable requests={requests} />}
           </CardContent>
         </Card>
       </main>
@@ -113,6 +117,7 @@ export default async function Page() {
 }
 
 /* ——————————————————————————————————————————————————————————— */
+
 
 function Stat({
   label,
@@ -136,56 +141,65 @@ function Stat({
   );
 }
 
-function RosterTable({ students }: { students: Student[] }) {
+type RequestWithDetails = Awaited<
+  ReturnType<typeof prisma.maintenanceRequest.findMany>
+>[number];
+
+function MaintenanceTable({ requests }: { requests: RequestWithDetails[] }) {
   return (
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead>Name</TableHead>
-          <TableHead className="hidden sm:table-cell">Email</TableHead>
-          <TableHead className="hidden md:table-cell">Major</TableHead>
-          <TableHead>Year</TableHead>
+          <TableHead>Room</TableHead>
+          <TableHead className="hidden md:table-cell">Reporter</TableHead>
+          <TableHead className="hidden lg:table-cell">Assigned to</TableHead>
+          <TableHead className="hidden sm:table-cell">Date</TableHead>
+          <TableHead>Status</TableHead>
           <TableHead className="text-right">&nbsp;</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {students.map((s) => (
-          <TableRow key={s.studentId} className="group">
+        {requests.map((r) => (
+          <TableRow key={r.requestId} className="group">
             <TableCell>
               <div className="font-medium">
-                {s.firstName} {s.lastName}
+                {r.room.building.buildingName} — {r.room.roomNumber}
               </div>
-              <div className="text-xs text-muted-foreground sm:hidden">
-                {s.email}
-              </div>
-            </TableCell>
-            <TableCell className="hidden sm:table-cell">
-              <a
-                href={`mailto:${s.email}`}
-                className="text-muted-foreground hover:text-foreground"
+              <div
+                className="mt-0.5 max-w-[200px] truncate text-xs text-muted-foreground"
+                title={r.description}
               >
-                {s.email}
-              </a>
+                {r.description}
+              </div>
             </TableCell>
             <TableCell className="hidden text-muted-foreground md:table-cell">
-              {s.major}
+              {r.student.firstName} {r.student.lastName}
+            </TableCell>
+            <TableCell className="hidden text-muted-foreground lg:table-cell">
+              {r.staff?.name ?? "Unassigned"}
+            </TableCell>
+            <TableCell className="num hidden text-muted-foreground sm:table-cell">
+              {fmt(r.requestDate)}
             </TableCell>
             <TableCell>
-              <Badge variant="secondary" className="num">
-                {YEAR_LABEL[s.year] ?? `Year ${s.year}`}
+              <Badge
+                variant="secondary"
+                className={STATUS_COLOR[r.status] ?? ""}
+              >
+                {r.status}
               </Badge>
             </TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-1 opacity-70 transition-opacity group-hover:opacity-100">
                 <Button asChild size="icon-sm" variant="ghost" title="Edit">
-                  <Link href={`/students/${s.studentId}/edit`}>
+                  <Link href={`/maintenance/${r.requestId}/edit`}>
                     <IconEdit />
                   </Link>
                 </Button>
                 <form
                   action={async () => {
                     "use server";
-                    await deleteStudent(s.studentId);
+                    await deleteMaintenanceRequest(r.requestId);
                   }}
                 >
                   <Button
@@ -211,16 +225,16 @@ function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
       <div className="grid size-12 place-items-center rounded-2xl bg-warm/12 text-warm">
-        <IconUsers className="size-6" />
+        <IconTool className="size-6" />
       </div>
-      <h3 className="mt-4 text-base">No residents yet</h3>
+      <h3 className="mt-4 text-base">No requests yet</h3>
       <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-        Start the registry with your first resident — it only takes a minute.
+        Submit a maintenance request when a room needs attention.
       </p>
       <Button asChild className="mt-5">
-        <Link href="/students/new">
+        <Link href="/maintenance/new">
           <IconPlus />
-          Add the first student
+          Submit the first request
         </Link>
       </Button>
     </div>

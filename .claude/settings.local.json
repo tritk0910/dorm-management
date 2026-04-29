@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd c:\\\\\\\\Users\\\\\\\\erizo\\\\\\\\Desktop\\\\\\\\idkwhatever)",
+      "Bash(node -e ' *)"
+    ]
+  }
+}

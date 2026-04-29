@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:generate": "npx prisma generate",
-    "db:push": "npx prisma db push"
+    "db:push": "npx prisma db push",
+    "db:reset": "npx prisma migrate reset"
   },
   "dependencies": {
     "@prisma/adapter-mssql": "^7.8.0",
